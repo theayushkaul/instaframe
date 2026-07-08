@@ -11,6 +11,7 @@ const opentype = require('opentype.js');
 
 const app = express();
 app.use(cors());
+app.use(express.static(path.join(__dirname, '../frontend/build')));
 const PORT = process.env.PORT || 5000;
 
 // Multer setup: store files in memory
@@ -128,6 +129,11 @@ app.post('/upload', upload.single('photo'), async (req, res) => {
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
+});
+
+// Serve React app for all non-API routes
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, '../frontend/build', 'index.html'));
 });
 
 app.listen(PORT, () => {
