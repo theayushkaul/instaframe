@@ -50,3 +50,7 @@ ENV/
 *.egg-info/
 .installed.cfg
 *.egg 
+
+# Backend
+/backend/service-account.json
+backend/google_secret.json
