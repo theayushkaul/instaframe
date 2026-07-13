@@ -3,7 +3,6 @@ const express = require('express');
 const multer = require('multer');
 const path = require('path');
 const { google } = require('googleapis');
-const fs = require('fs');
 const cors = require('cors');
 const streamifier = require('streamifier');
 const sharp = require('sharp');
@@ -26,15 +25,13 @@ const auth = new google.auth.GoogleAuth({
 const drive = google.drive({ version: 'v3', auth });
 const DRIVE_FOLDER_ID = process.env.DRIVE_FOLDER_ID;
 
-// Helper to get the next serial number (stored in a local file for simplicity)
-function getNextSerial() {
-  const counterPath = './serial_counter.txt';
-  let serial = 1;
-  if (fs.existsSync(counterPath)) {
-    serial = parseInt(fs.readFileSync(counterPath, 'utf8'), 10) + 1;
-  }
-  fs.writeFileSync(counterPath, serial.toString());
-  return serial.toString().padStart(3, '0');
+// Generate a unique filename without relying on persistent local state
+// (a counter file doesn't survive on serverless hosts with ephemeral filesystems)
+function getUniqueFilename() {
+  const now = new Date();
+  const timestamp = now.toISOString().replace(/[-:T]/g, '').slice(0, 14); // YYYYMMDDHHMMSS
+  const randomSuffix = Math.random().toString(36).slice(2, 6); // 4 random chars
+  return `${timestamp}_${randomSuffix}`;
 }
 
 // Helper to escape XML special characters
@@ -55,8 +52,8 @@ app.post('/upload', upload.single('photo'), async (req, res) => {
       return res.status(400).json({ error: 'No file uploaded' });
     }
 
-    // Get serial number for filename
-    const serial = getNextSerial();
+    // Get unique filename (no shared state needed — safe for serverless)
+    const filenameId = getUniqueFilename();
 
     // Resize image to square (crop to center) and auto-rotate
     let image = sharp(file.buffer).rotate().resize(620, 620, { fit: 'cover' });
@@ -111,7 +108,7 @@ app.post('/upload', upload.single('photo'), async (req, res) => {
     // Upload the processed image to Google Drive (no folder), named img_<serialNo>.jpg
     const photoRes = await drive.files.create({
       requestBody: {
-        name: `img_${serial}.jpg`,
+        name: `img_${filenameId}.jpg`,
         parents: [DRIVE_FOLDER_ID],
         mimeType: 'image/jpeg',
       },

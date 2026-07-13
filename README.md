@@ -1,145 +1,50 @@
-# Selfie Upload App
+# Selfie Code 📸
 
-A React frontend with Node.js backend that allows users to upload selfies with comments and processes them into Polaroid-style photos with custom text overlays.
+A QR-triggered photobooth: scan a code, take a photo, leave a comment, and it's automatically composited into a Polaroid-style print and uploaded to Google Drive.
 
-## Features
+**Status:** Built and working locally. Not yet deployed.
 
-- 📸 Photo upload with camera capture
-- 💬 Comment system
-- 🖼️ Polaroid-style image processing with custom borders
-- 📱 QR code for easy mobile access
-- ☁️ Google Drive integration for photo storage
-- 🎨 Custom font rendering (Caveat)
+## How it works
+
+1. A landing page renders a QR code (client-side, via `qrcode.react`) pointing to the upload page
+2. Scanning it opens the upload page on the visitor's phone
+3. The visitor takes a photo (native mobile camera, via `<input capture>`) and writes a short comment
+4. The backend:
+   - Crops the photo to a square and auto-rotates it (`sharp`)
+   - Adds a white Polaroid-style border (classic 1:1:1:4 ratio)
+   - Renders the comment as handwritten-style caption text (via `opentype.js` + the Caveat font) and composites it onto the bottom border
+   - Uploads the finished image to a specified Google Drive folder via a service account — no visitor login required
 
 ## Tech Stack
 
-- **Frontend**: React, Tailwind CSS, QR Code generation
-- **Backend**: Node.js, Express, Sharp (image processing), Google APIs
-- **Storage**: Google Drive
+**Frontend:** React, React Router, Tailwind CSS, `qrcode.react`
+**Backend:** Node.js, Express, `multer` (upload handling), `sharp` (image compositing), `opentype.js` (caption rendering), Google Drive API (`googleapis`) via service account auth
+
+## Known limitations (current state)
+
+- Image numbering uses a local counter file on disk — works fine locally, but won't hold up on serverless hosts with ephemeral filesystems (Vercel/Netlify functions), since the counter resets on every cold start
+- The QR code always routes to the same upload endpoint — it isn't tied to individual sessions or events
+- No database — Drive is the only persistence layer
 
 ## Setup
 
-### Prerequisites
-
-- Node.js (>=16.0.0)
-- Google Cloud Platform account with Drive API enabled
-- Service account credentials
-
-### Installation
-
-1. Clone the repository
-2. Install dependencies:
-   ```bash
-   npm run install-all
-   ```
-
-3. Set up Google Drive credentials:
-   - Place your `service-account.json` file in the `backend/` directory
-   - Set the `DRIVE_FOLDER_ID` environment variable
-
-4. Build the frontend:
-   ```bash
-   npm run build
-   ```
-
-5. Start the application:
-   ```bash
-   npm start
-   ```
-
-## Environment Variables
-
-Create a `.env` file in the backend directory:
-
-```
-PORT=5000
-GOOGLE_APPLICATION_CREDENTIALS=./service-account.json
-DRIVE_FOLDER_ID=your_google_drive_folder_id
-```
-
-## Development
-
-Run both frontend and backend in development mode:
-
 ```bash
+# Backend
+cd backend
+npm install
+# Add a .env with PORT, GOOGLE_APPLICATION_CREDENTIALS, DRIVE_FOLDER_ID
 npm run dev
+
+# Frontend
+cd frontend
+npm install
+npm start
 ```
 
-This will start:
-- Backend on http://localhost:5000
-- Frontend on http://localhost:3000
+You'll need a Google Cloud service account with Drive API access and `drive.file` scope, and a Drive folder ID to upload into. Credentials are never committed — see `.env.example` / `service-account.example.json` for the expected shape.
 
-## Deployment
+## Roadmap
 
-### Option 1: Single Server Deployment
-
-The app is configured to serve the React frontend from the Express backend:
-
-```bash
-npm run deploy
-```
-
-### Option 2: Using Deployment Scripts
-
-**Windows:**
-```bash
-deploy.bat
-```
-
-**Linux/Mac:**
-```bash
-chmod +x deploy.sh
-./deploy.sh
-```
-
-## API Endpoints
-
-- `POST /upload` - Upload a photo with comment
-  - Body: FormData with `photo` (file) and `comment` (string)
-  - Returns: JSON with success message and Google Drive file ID
-
-## File Structure
-
-```
-├── backend/
-│   ├── index.js              # Express server
-│   ├── fonts/                # Custom fonts
-│   ├── service-account.json  # Google credentials
-│   └── package.json
-├── frontend/
-│   ├── src/
-│   │   └── App.js           # React components
-│   └── package.json
-├── package.json             # Root package.json
-├── deploy.sh               # Linux/Mac deployment
-├── deploy.bat              # Windows deployment
-└── README.md
-```
-
-## Configuration
-
-### Google Drive Setup
-
-1. Create a Google Cloud Project
-2. Enable the Google Drive API
-3. Create a service account
-4. Download the service account JSON file
-5. Create a folder in Google Drive and get its ID
-6. Update the `DRIVE_FOLDER_ID` environment variable
-
-### Customization
-
-- **Font**: Replace `backend/fonts/Caveat-Medium.ttf` with your preferred font
-- **Image Processing**: Modify the Sharp configuration in `backend/index.js`
-- **Styling**: Update Tailwind classes in `frontend/src/App.js`
-
-## Troubleshooting
-
-1. **Google Drive API Issues**: Ensure your service account has proper permissions
-2. **Image Processing Errors**: Check that Sharp is properly installed
-3. **CORS Issues**: Verify CORS configuration in backend
-4. **Port Conflicts**: Change PORT environment variable if needed
-
-## License
-
-MIT License
+- [ ] Replace local serial counter with a serverless-safe approach
+- [ ] Deploy (Vercel for frontend, a persistent host for backend)
+- [ ] Optional: per-event/session QR codes instead of one static endpoint
