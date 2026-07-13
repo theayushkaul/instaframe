@@ -1,4 +1,4 @@
-# Selfie Code 📸
+# Instaframe📸
 
 A QR-triggered photobooth: scan a code, take a photo, leave a comment, and it's automatically composited into a Polaroid-style print and uploaded to Google Drive.
 
