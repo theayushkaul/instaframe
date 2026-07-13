@@ -42,9 +42,3 @@ npm start
 ```
 
 You'll need a Google Cloud service account with Drive API access and `drive.file` scope, and a Drive folder ID to upload into. Credentials are never committed — see `.env.example` / `service-account.example.json` for the expected shape.
-
-## Roadmap
-
-- [ ] Replace local serial counter with a serverless-safe approach
-- [ ] Deploy (Vercel for frontend, a persistent host for backend)
-- [ ] Optional: per-event/session QR codes instead of one static endpoint
